@@ -1,0 +1,6 @@
+__pycache__/
+node_modules/
+_development/.test-deps/
+# never commit exports, saved labels or browser data
+*.json
+*.zip

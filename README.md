@@ -7,6 +7,11 @@ Personal Violentmonkey userscripts (Firefox).
 One script that does all of this:
 
 - **Floating images/GIFs.** Alt-click any image, or press Alt+Shift+J to pick one. You can also send an image from another website to your last JanitorAI tab. Each image gets its own popout with resizing, optional cropping, and character labels.
+- **Images without a web address** (ChatGPT images, files on your PC, screenshots). On JanitorAI you can:
+  - paste one with Ctrl+V (click the page first, not the textbox);
+  - drag a file, or an image from another tab, onto the page;
+  - use the script menu, "Open image from file / paste...".
+  Labels on these come back whenever you open the same image again.
 - **Theme.** A transparent header, a compact name panel on the left, the proxy button at top-right, and a warm glass textbox.
 - **Copy chat.** A "Copy chat" button at the bottom right, also available in the script menu, copies the open chat to your clipboard as plain text.
 
@@ -42,6 +47,7 @@ Bump `VERSION` in `build.py` for every release so Violentmonkey detects it.
 - `_development/userscript/`: the modules (transport, annotations, viewer manager, themes, chat export) and `build.py`.
 - `_development/janitor-image-float/content.js`: the base viewer used as build input. Don't install it directly.
 - `_development/tests/`
+  - `local_images_smoke.js`: paste/drop/open-file checks (Node + jsdom).
   - Three Selenium + Firefox suites (`*_smoke.py`). Set `FIREFOX_BIN` if Firefox isn't at the default Windows path.
   - `chat_export_smoke.js`, a Node + jsdom check that the merged export matches Copy Chat 1.0.0 exactly. Run it with `npm install jsdom` first.
 

@@ -16,6 +16,21 @@
       GM_setValue(targetKey, { id: tabId, time: Date.now() });
     }
   }
+  async function blobToDataURL(src) {
+    try {
+      const getter = typeof content !== "undefined" && content?.fetch ? content.fetch.bind(content) : fetch;
+      const response = await getter(src);
+      const blob = await response.blob();
+      if (!/^image\//i.test(blob.type) || blob.size > 12 * 1024 * 1024) return null;
+      const url = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(blob);
+      });
+      return /^data:image\//i.test(url) ? url : null;
+    } catch { return null; }
+  }
   async function sendImage(src) {
     if (isJanitor) { show(src); return; }
     const target = GM_getValue(targetKey, null);
@@ -24,8 +39,13 @@
       return;
     }
     if (src.startsWith("blob:")) {
-      toast("This image has a temporary URL. Open the original image and select it there.");
-      return;
+      // Temporary page-only address (ChatGPT images, previews). Send the image
+      // itself instead; the same image then always gets the same saved labels.
+      src = await blobToDataURL(src);
+      if (!src) {
+        toast("This image has a temporary address. Copy it and paste it into JanitorAI (Ctrl+V).");
+        return;
+      }
     }
     const message = { id: crypto.randomUUID(), target: target.id, src, time: Date.now() };
     GM_setValue(inboxKey, message);

@@ -52,17 +52,18 @@ header = (base / 'header-theme.js').read_text(encoding='utf-8')
 composer = (base / 'composer-theme.js').read_text(encoding='utf-8')
 chat_export = (base / 'chat-export.js').read_text(encoding='utf-8')
 local_images = (base / 'local-images.js').read_text(encoding='utf-8')
+chat_width = (base / 'chat-width.js').read_text(encoding='utf-8')
 modules = '\n'.join((base / name).read_text(encoding='utf-8') for name in ['bridge.js', 'annotations.js', 'viewer-manager.js'])
 source = bootstrap + safe_source + modules + '\n' + viewer + '\n  let picking = false;\n  let notice;\n' + picker
-source += '  if (isJanitor) {\n' + header + '\n' + composer + '\n' + chat_export + '\n' + local_images + '\n  }\n  initializeUserscript();\n})();\n'
-VERSION = '2.13.0'  # bump on every release so Violentmonkey sees the update
+source += '  if (isJanitor) {\n' + header + '\n' + composer + '\n' + chat_export + '\n' + local_images + '\n' + chat_width + '\n  }\n  initializeUserscript();\n})();\n'
+VERSION = '2.14.0'  # bump on every release so Violentmonkey sees the update
 REPO_RAW = 'https://raw.githubusercontent.com/Maru3131/userscript/main/'
 INSTALLER = 'transparent-header.user.js'
 metadata = f'''// ==UserScript==
 // @name         Transparent Header
 // @namespace    local.janitor-transparent-header
 // @version      {VERSION}
-// @description  Float and annotate multiple images, reveal the JanitorAI header background, style the textbox, open pasted/dropped images, and copy the open chat to the clipboard. Saved labels stay local.
+// @description  Float and annotate multiple images, reveal the JanitorAI header background, style the textbox, open pasted/dropped images, widen the chat column, and copy the open chat to the clipboard. Saved labels stay local.
 // @homepageURL  https://github.com/Maru3131/userscript
 // @updateURL    {REPO_RAW}{INSTALLER}
 // @downloadURL  {REPO_RAW}{INSTALLER}

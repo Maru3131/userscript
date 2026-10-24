@@ -13,7 +13,7 @@ One script that does all of this:
   - use the script menu, "Open image from file / paste...".
   Labels on these come back whenever you open the same image again.
 - **Theme.** A transparent header, a compact name panel on the left, the proxy button at top-right, and a warm glass textbox.
-- **Chat width.** On big screens, pick a wider text column with the script menu's "Chat width..." slider. It changes live; Save keeps it, Default goes back. It never covers the name panel or the proxy button.
+- **Chat width.** On big screens, pick a wider text column with the script menu's "Chat width..." slider. It changes live; Save keeps it, Default goes back. It never covers the name panel or the proxy button, and works on smaller laptop screens too.
 - **Copy chat.** A "Copy chat" button at the bottom right, also available in the script menu, copies the open chat to your clipboard as plain text.
 
 **Install / update link:**

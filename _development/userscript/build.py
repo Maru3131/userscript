@@ -56,7 +56,7 @@ chat_width = (base / 'chat-width.js').read_text(encoding='utf-8')
 modules = '\n'.join((base / name).read_text(encoding='utf-8') for name in ['bridge.js', 'annotations.js', 'viewer-manager.js'])
 source = bootstrap + safe_source + modules + '\n' + viewer + '\n  let picking = false;\n  let notice;\n' + picker
 source += '  if (isJanitor) {\n' + header + '\n' + composer + '\n' + chat_export + '\n' + local_images + '\n' + chat_width + '\n  }\n  initializeUserscript();\n})();\n'
-VERSION = '2.14.0'  # bump on every release so Violentmonkey sees the update
+VERSION = '2.14.1'  # bump on every release so Violentmonkey sees the update
 REPO_RAW = 'https://raw.githubusercontent.com/Maru3131/userscript/main/'
 INSTALLER = 'transparent-header.user.js'
 metadata = f'''// ==UserScript==

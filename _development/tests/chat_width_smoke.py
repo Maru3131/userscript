@@ -21,10 +21,12 @@ FIXTURE = """<!doctype html><html><head><style>
   ._chatInputWrapper_f6 { max-width:600px; margin:0 auto 16px; }
   ._chatInputInner_g7 { padding:8px; border:1px solid #555; }
   ._chatTextarea_h8 { width:100%; box-sizing:border-box; }
-  ._side_i9 { position:fixed; left:16px; top:16px; width:240px; max-width:240px; height:80px; }
+  ._side_i9 { position:fixed; left:16px; top:16px; width:180px; max-width:180px; height:80px; }
+  ._apiTag_k2 { position:fixed; right:16px; top:16px; width:120px; height:36px; }
   ._dialog_j0 { max-width:500px; margin:40px auto; height:100px; }
 </style></head><body>
-  <div class="_side_i9">Elara</div>
+  <div class="_headerContainer_k1 _side_i9"><button id="character-name-button">Elara</button>
+    <span class="_apiTag_k2">using proxy</span></div>
   <div class="_chatLayout_a1"><div class="_outerColumn_b2"><div class="_messageList_c3" id="list">
     MSGS
   </div></div></div>
@@ -41,6 +43,15 @@ window.GM_deleteValue = k => { delete __store[k]; localStorage.setItem('__gm', J
 window.GM_addValueChangeListener = () => {};
 window.GM_registerMenuCommand = (n,f) => { __menu[n]=f; };
 window.GM_setClipboard = () => {};"""
+
+RESERVE_JS = """() => { const h = document.querySelector('._side_i9').getBoundingClientRect();
+  const a = document.querySelector('._apiTag_k2').getBoundingClientRect();
+  return Math.ceil(Math.max(h.right, innerWidth - a.left, 24) + 16); }"""
+
+def expected(page, chosen):
+    r = page.evaluate(RESERVE_JS)
+    vw = page.evaluate('innerWidth')
+    return round(max(600, min(chosen, vw - 2 * r)))
 
 def width(page, sel):
     return page.eval_on_selector(sel, 'e => Math.round(e.getBoundingClientRect().width)')
@@ -59,6 +70,7 @@ def main():
             page.wait_for_timeout(400)
 
         load()
+        side_before = width(page, '._side_i9')
         assert width(page, '._chatInputInner_g7') == 600, 'default width changed without a setting'
         assert width(page, '._message_d4') == 600
 
@@ -68,17 +80,17 @@ def main():
         page.eval_on_selector('[data-jai-width-ui] input[type=range]',
                               'e => { e.value = "1100"; e.dispatchEvent(new Event("input", {bubbles:true})); }')
         page.wait_for_timeout(500)
-        assert width(page, '._chatInputWrapper_f6') == 1100
-        assert width(page, '._messageList_c3') == 1100, f"messages not widened (nested cap): {width(page, '._messageList_c3')}"
-        assert width(page, '._message_d4') == 1100
-        assert width(page, '._side_i9') == 240, 'side panel touched'
+        assert width(page, '._chatInputWrapper_f6') == expected(page, 1100)
+        assert width(page, '._messageList_c3') == expected(page, 1100), f"messages not widened (nested cap): {width(page, '._messageList_c3')}"
+        assert width(page, '._message_d4') == expected(page, 1100)
+        assert width(page, '._side_i9') == side_before, 'side panel touched'
         assert width(page, '#dialog') == 500, 'unrelated box touched'
 
         # Messages arriving later are wide too, including offscreen ones
         page.evaluate('''() => { const m = document.createElement("div"); m.className = "_message_d4"; m.id = "late";
                           m.textContent = "late ".repeat(200); document.getElementById("list").prepend(m); }''')
         page.wait_for_timeout(400)
-        assert width(page, '#late') == 1100, 'new message not widened'
+        assert width(page, '#late') == expected(page, 1100), 'new message not widened'
 
         # Cancel restores, Save persists
         page.click('[data-jai-width-ui] >> text=Cancel')
@@ -96,13 +108,29 @@ def main():
         page.wait_for_timeout(400)
         assert width(page, '._messageList_c3') == 1000, f"saved width not restored: {width(page, '._messageList_c3')}"
 
-        # Never wider than the screen minus the side panels
+        # Never wider than the screen minus the name panel (196px + 16px each side)
         page.set_viewport_size({'width': 1400, 'height': 900})
         page.wait_for_timeout(400)
-        assert width(page, '._messageList_c3') == 800, f"not capped on small window: {width(page, '._messageList_c3')}"
+        assert width(page, '._messageList_c3') == expected(page, 1000), f"not capped on small window: {width(page, '._messageList_c3')}"
         page.set_viewport_size({'width': 1000, 'height': 900})
         page.wait_for_timeout(400)
         assert width(page, '._messageList_c3') == 600, 'went narrower than the site default'
+
+        # ThinkPad-sized window (1080p at 150%): slider must still have range
+        page.set_viewport_size({'width': 1280, 'height': 720})
+        page.wait_for_timeout(400)
+        page.evaluate('__menu["Chat width..."]()')
+        page.wait_for_selector('[data-jai-width-ui] input[type=range]')
+        rng = page.eval_on_selector('[data-jai-width-ui] input[type=range]', 'e => [Number(e.min), Number(e.max)]')
+        assert rng == [600, expected(page, 9999)] and rng[1] - rng[0] >= 200, f"slider range on laptop: {rng}"
+        page.eval_on_selector('[data-jai-width-ui] input[type=range]',
+                              'e => { e.value = e.max; e.dispatchEvent(new Event("input", {bubbles:true})); }')
+        page.wait_for_timeout(400)
+        assert rng[1] - 10 < width(page, '._messageList_c3') <= rng[1], f"laptop widen failed: {width(page, '._messageList_c3')}"
+        hdr = page.eval_on_selector('._side_i9', 'e => e.getBoundingClientRect().right')
+        col = page.eval_on_selector('._messageList_c3', 'e => e.getBoundingClientRect().left')
+        assert col > hdr, 'column runs under the name panel'
+        page.click('[data-jai-width-ui] >> text=Cancel')
 
         # Not on a chat page -> nothing changes
         page.set_viewport_size({'width': 1920, 'height': 1080})

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Transparent Header
 // @namespace    local.janitor-transparent-header
-// @version      2.14.0
+// @version      2.14.1
 // @description  Float and annotate multiple images, reveal the JanitorAI header background, style the textbox, open pasted/dropped images, widen the chat column, and copy the open chat to the clipboard. Saved labels stay local.
 // @homepageURL  https://github.com/Maru3131/userscript
 // @updateURL    https://raw.githubusercontent.com/Maru3131/userscript/main/transparent-header.user.js
@@ -1379,7 +1379,20 @@
 
   const KEY = "jai-chat-width";          // px, 0 = site default
   const ATTR = "data-jai-wide";
-  const SIDE_RESERVE = 300;              // keep clear of the left name panel / proxy button
+  // Room kept free at each side, measured from the name panel (left) and the
+  // proxy button (right) so small screens still get a usable range.
+  function sideReserve() {
+    let left = 0, right = 0;
+    const header = document.querySelector("#character-name-button")
+      ?.closest('[class^="_headerContainer_"],[class*=" _headerContainer_"]');
+    const hr = header?.getBoundingClientRect();
+    if (hr && hr.width) left = hr.right;
+    const api = header?.querySelector('[class^="_apiTag_"],[class*=" _apiTag_"]');
+    const ar = api?.getBoundingClientRect();
+    if (ar && ar.width) right = innerWidth - ar.left;
+    return Math.ceil(Math.max(left, right, 24) + 16);
+  }
+  const maxAllowed = () => Math.max(native, innerWidth - sideReserve() * 2);
   let chosen = Number(GM_getValue(KEY, 0)) || 0;
 
   const style = document.createElement("style");
@@ -1395,7 +1408,7 @@
   function writeCSS() {
     if (!chosen || !selectors.size) { style.textContent = ""; return; }
     // Never narrower than the site's own width, never under the side panels.
-    const width = `max(${native}px, min(${chosen}px, calc(100vw - ${SIDE_RESERVE * 2}px)))`;
+    const width = `${Math.round(Math.max(native, Math.min(chosen, maxAllowed())))}px`;
     style.textContent = `${Array.from(selectors).join(",\n")} { max-width: ${width} !important; }`;
   }
 
@@ -1469,7 +1482,7 @@
   }
 
   new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
-  window.addEventListener("resize", schedule);
+  window.addEventListener("resize", () => { writeCSS(); schedule(); });
   document.addEventListener("scroll", schedule, { capture: true, passive: true });
 
   function setWidth(px, save) {
@@ -1489,7 +1502,8 @@
     if (!native) { toast("Couldn't find the chat column on this page."); return; }
     const before = chosen;
     const min = Math.round(native);
-    const max = Math.max(min, innerWidth - SIDE_RESERVE * 2);
+    const max = Math.round(maxAllowed());
+    if (max - min < 20) { toast("This window is too narrow to widen the chat. Try a smaller zoom (Ctrl + -)."); return; }
     panel = document.createElement("div");
     panel.setAttribute("data-jai-width-ui", "");
     panel.style.cssText = "position:fixed!important;top:16px!important;left:50%!important;transform:translateX(-50%)!important;z-index:2147483647!important;display:flex!important;gap:10px!important;align-items:center!important;background:rgba(36,30,26,.94)!important;color:#eee6da!important;border:1px solid rgba(211,152,123,.45)!important;border-radius:12px!important;padding:10px 14px!important;font:14px system-ui!important;";
